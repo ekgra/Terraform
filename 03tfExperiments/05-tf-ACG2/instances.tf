@@ -17,7 +17,7 @@ data "aws_key_pair" "ec2_key_pair_master" {
 resource "aws_key_pair" "ec2_key_pair_worker" {
   provider   = aws.region_worker
   key_name   = "testSSHKey"
-  public_key = file("/Users/outlander/.ssh/testSSHKey.pub")
+  public_key = file("${path.module}/testSSHKey.pub")
 }
 
 resource "aws_instance" "ec2_jenkins_master" {
