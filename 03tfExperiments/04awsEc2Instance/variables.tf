@@ -1,16 +1,17 @@
 variable "region" {
   type    = string
-  default = "ap-southeast-2"
 }
 
 variable "vpc-name" {
   type    = string
-  default = "kuber-vpc"
 }
 
 variable "instance-type" {
   type    = string
-  default = "t3.micro"
+}
+
+variable "ports" {
+  type = list
 }
 
 # variable "k8s-master-hostname" {
