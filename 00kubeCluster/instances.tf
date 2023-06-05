@@ -42,7 +42,6 @@ resource "aws_instance" "k8s-node" {
   user_data = file("installsw.sh")
   tags = {
     Name      = "k8s-node-${count.index}"
-    owner     = "Kuber Gaur"
     expire-on = "2023-12-31"
   }
 
@@ -76,7 +75,6 @@ resource "aws_instance" "k8s-node" {
 #   user_data = data.template_file.init-master.rendered
 #   tags = {
 #     Name      = "k8s-node-0"
-#     owner     = "Kuber Gaur"
 #     expire-on = "2023-12-31"
 #   }
 
@@ -102,7 +100,6 @@ resource "aws_instance" "k8s-node" {
 #   user_data = data.template_file.init-worker-1.rendered
 #   tags = {
 #     Name      = "k8s-node-1"
-#     owner     = "Kuber Gaur"
 #     expire-on = "2023-12-31"
 #   }
 
@@ -128,7 +125,6 @@ resource "aws_instance" "k8s-node" {
 #   user_data = data.template_file.init-worker-2.rendered
 #   tags = {
 #     Name      = "k8s-node-2"
-#     owner     = "Kuber Gaur"
 #     expire-on = "2023-12-31"
 #   }
 

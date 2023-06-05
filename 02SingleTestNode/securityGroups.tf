@@ -1,8 +1,8 @@
-resource "aws_security_group" "kuber-sec-grp" {
+resource "aws_security_group" "k-sec-grp" {
   provider    = aws.provider
-  name        = "k8s-sec-grp"
+  name        = "k-sec-grp"
   description = "Allow 443 for traffic to Jenkins"
-  vpc_id      = aws_vpc.kuber-vpc.id
+  vpc_id      = aws_vpc.k-vpc.id
 
   ingress {
     from_port   = 22
@@ -66,4 +66,3 @@ resource "aws_security_group" "kuber-sec-grp" {
   }
 }
 
-# plan to have separate security groups for Control plane and worker nodes later.
