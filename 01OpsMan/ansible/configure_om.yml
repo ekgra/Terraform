@@ -80,18 +80,19 @@
         - { type: 'hard', parameter: 'nproc', value: '64000' }
         - { type: 'soft', parameter: 'nproc', value: '64000' }
     
-    - name: "run script to disable hugepages"
-      script:
-        cmd: disable_hugepage.sh
+    # - name: "run script to disable hugepages"
+    #   script:
+    #     cmd: disable_hugepage.sh
         
-    - name: reboot the machines
-      ansible.builtin.reboot:
+    # - name: reboot the machines
+    #   ansible.builtin.reboot:
 
 - name: "Play 2 || - Install mongodb and start servers"
   hosts: om_servers
   become: true
   become_method: sudo
-  gather_facts: true
+  
+  tasks:
     - name: Ensure group mongod exists
       ansible.builtin.group:
         name: mongod
@@ -111,6 +112,31 @@
       with_items:
         - "/data/appdb"
         - "/data/logs"
+    
+    - name: Import MongoDB public GPG key
+      apt_key:
+        url: https://pgp.mongodb.com/server-6.0.asc
+        keyring: /usr/share/keyrings/mongodb-server-6.0.gpg 
+        state: present
+
+    - name: Add MongoDB list file
+      apt_repository:
+        repo: "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.com/apt/ubuntu jammy/mongodb-enterprise/6.0 multiverse" 
+        state: present
+        filename: /etc/apt/sources.list.d/mongodb-enterprise-6.0.list
+        update_cache: yes
+
+    - name: Install MongoDB Enterprise
+      apt:
+        name: mongodb-enterprise
+        state: present
+        update_cache: yes
+    
+    - name: "start mongod service"
+      service: 
+        name: mongod
+        state: started
+        enabled: yes
 
 
 
