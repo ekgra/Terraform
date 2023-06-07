@@ -50,7 +50,7 @@ resource "aws_main_route_table_association" "om-vpc-main-rtbl-assoc" {
 }
 
 resource "aws_route_table_association" "om-vpc-subnet-rtbl-assoc" {
-  for_each = aws_subnet.om-vpc-subnet
+  for_each       = aws_subnet.om-vpc-subnet
   provider       = aws.provider
   subnet_id      = each.value.id
   route_table_id = aws_route_table.om-vpc-main-rtbl.id

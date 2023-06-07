@@ -1,0 +1,8 @@
+om0 ansible_host=extf-om-node-0.mdbrecruit.net ansible_port=22 ansible_user=ubuntu ansible_connection=ssh hostname=tf-om-node-0.mdbrecruit.net
+om1 ansible_host=extf-om-node-1.mdbrecruit.net ansible_port=22 ansible_user=ubuntu ansible_connection=ssh hostname=tf-om-node-1.mdbrecruit.net
+om2 ansible_host=extf-om-node-2.mdbrecruit.net ansible_port=22 ansible_user=ubuntu ansible_connection=ssh hostname=tf-om-node-2.mdbrecruit.net
+
+[om_servers]
+om0
+om1
+om2

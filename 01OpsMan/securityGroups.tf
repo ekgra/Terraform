@@ -9,9 +9,9 @@ resource "aws_security_group" "om-sec-grp" {
     for_each = var.sg-ingress-ports
     iterator = port
     content {
-      from_port = port.value[0]
-      to_port = port.value[1]
-      protocol = port.value[2]
+      from_port   = port.value[0]
+      to_port     = port.value[1]
+      protocol    = port.value[2]
       cidr_blocks = port.value[3]
     }
   }
