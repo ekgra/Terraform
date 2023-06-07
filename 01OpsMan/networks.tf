@@ -1,6 +1,6 @@
-resource "aws_vpc" "opsMan-vpc" {
+resource "aws_vpc" "om-vpc" {
   provider             = aws.provider
-  cidr_block           = "192.168.0.0/27"
+  cidr_block           = "192.168.0.0/20"
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
@@ -8,47 +8,50 @@ resource "aws_vpc" "opsMan-vpc" {
   }
 }
 
-resource "aws_internet_gateway" "opsMan-vpc-igw" {
+resource "aws_internet_gateway" "om-vpc-igw" {
   provider = aws.provider
-  vpc_id   = aws_vpc.k8s-vpc.id
+  vpc_id   = aws_vpc.om-vpc.id
 }
 
-data "aws_availability_zones" "opsMan-vpc-azs" {
+data "aws_availability_zones" "om-vpc-azs" {
   provider = aws.provider
   state    = "available"
 }
 
-resource "aws_subnet" "k8s-subnet" {
+
+resource "aws_subnet" "om-vpc-subnet" {
+  for_each = zipmap(data.aws_availability_zones.om-vpc-azs.names, var.subnet-cidrs)
+  # for_each = toset(data.aws_availability_zones.om-vpc-azs.names)
   provider          = aws.provider
-  availability_zone = element(data.aws_availability_zones.k8s-vpc-azs.names, 0)
-  vpc_id            = aws_vpc.k8s-vpc.id
-  cidr_block        = "192.168.0.0/28"
+  availability_zone = each.key
+  vpc_id            = aws_vpc.om-vpc.id
+  cidr_block        = each.value
 }
 
-
-resource "aws_route_table" "k8s-rtbl" {
+resource "aws_route_table" "om-vpc-main-rtbl" {
   provider = aws.provider
-  vpc_id   = aws_vpc.k8s-vpc.id
+  vpc_id   = aws_vpc.om-vpc.id
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.k8s-vpc-igw.id
+    gateway_id = aws_internet_gateway.om-vpc-igw.id
   }
   lifecycle {
     ignore_changes = all
   }
   tags = {
-    Name = "k8s-rtbl"
+    Name = "om-vpc-main-rtbl"
   }
 }
 
-resource "aws_main_route_table_association" "rtbl_assoc_main" {
+resource "aws_main_route_table_association" "om-vpc-main-rtbl-assoc" {
   provider       = aws.provider
-  vpc_id         = aws_vpc.k8s-vpc.id
-  route_table_id = aws_route_table.k8s-rtbl.id
+  vpc_id         = aws_vpc.om-vpc.id
+  route_table_id = aws_route_table.om-vpc-main-rtbl.id
 }
 
-resource "aws_route_table_association" "rtbl_assoc_subnet" {
+resource "aws_route_table_association" "om-vpc-subnet-rtbl-assoc" {
+  for_each = aws_subnet.om-vpc-subnet
   provider       = aws.provider
-  subnet_id      = aws_subnet.k8s-subnet.id
-  route_table_id = aws_route_table.k8s-rtbl.id
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.om-vpc-main-rtbl.id
 }
