@@ -1,0 +1,199 @@
+- name: "Play 1 || - Initialize the servers and run prod notes"
+  hosts: all
+  become: yes
+  remote_user: ubuntu
+  become_method: sudo
+
+  tasks:
+    - name: Wait for SSH access
+      ansible.builtin.wait_for:
+        host: '{{ ansible_host }}'
+        search_regex: OpenSSH
+        port: 22
+      vars:
+        ansible_connection: local
+      become: no
+    
+    # - name: "update apt-get"
+    #   apt:
+    #     upgrade: yes
+    #     update_cache: yes
+    
+    - name: Set the hostname
+      ansible.builtin.hostname:
+        name: "{{ hostname }}"
+    
+    - name: Create xfs filesystem on /dev/nvme1n1
+      community.general.filesystem:
+        fstype: xfs
+        state: present
+        dev: /dev/nvme1n1
+    
+    - name: Create xfs filesystem on /dev/nvme2n1
+      community.general.filesystem:
+        fstype: xfs
+        state: present
+        dev: /dev/nvme2n1
+
+    - name: Mount /dev/nvme1n1 to /data
+      ansible.posix.mount:
+        state: mounted
+        path: /data
+        src: /dev/nvme1n1
+        fstype: xfs
+        opts: noatime
+
+    - name: Mount /dev/nvme2n1 to /backup
+      ansible.posix.mount:
+        state: mounted
+        path: /backup
+        src: /dev/nvme2n1
+        fstype: xfs
+        opts: noatime
+
+    - name: update sysctl.conf with vm.swappiness and vm.zone_reclaim_mode
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+      with_items:
+        - { name: 'vm.swappiness', value: '1' }
+        - { name: 'vm.zone_reclaim_mode', value: '0' }
+
+    - name: Set correct ulimits
+      community.general.pam_limits:
+        domain: "mongod"
+        limit_type: "{{ item.type }}"
+        limit_item: "{{ item.parameter }}"
+        value: "{{ item.value }}"
+      with_items:
+        - { type: 'hard', parameter: 'fsize', value: 'unlimited' }
+        - { type: 'soft', parameter: 'fsize', value: 'unlimited' }
+        - { type: 'hard', parameter: 'cpu', value: 'unlimited' }
+        - { type: 'soft', parameter: 'cpu', value: 'unlimited' }
+        - { type: 'hard', parameter: 'as', value: 'unlimited' }
+        - { type: 'soft', parameter: 'as', value: 'unlimited' }
+        - { type: 'hard', parameter: 'memlock', value: 'unlimited' }
+        - { type: 'soft', parameter: 'memlock', value: 'unlimited' }
+        - { type: 'hard', parameter: 'nofile', value: '64000' }
+        - { type: 'soft', parameter: 'nofile', value: '64000' }
+        - { type: 'hard', parameter: 'nproc', value: '64000' }
+        - { type: 'soft', parameter: 'nproc', value: '64000' }
+    
+    - name: "run script to disable hugepages"
+      script:
+        cmd: disable_hugepage.sh
+        
+    - name: reboot the machines
+      ansible.builtin.reboot:
+
+- name: "Play 2 || - Install mongodb and start servers"
+  hosts: om_servers
+  become: true
+  become_method: sudo
+  gather_facts: true
+    - name: Ensure group mongod exists
+      ansible.builtin.group:
+        name: mongod
+        state: present
+
+    - name: Ensure user mongod exists
+      ansible.builtin.user:
+        name: mongod
+        group: mongod
+
+    - name: Set owner of dbpath - /data/appdb and logpath /data/logs
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: mongod
+        group: mongod
+      with_items:
+        - "/data/appdb"
+        - "/data/logs"
+
+
+
+
+
+
+
+# - name: "Play 3 || - Configure Ops Manager servers"
+#   hosts: om_servers
+#   become: true
+#   become_method: sudo
+#   gather_facts: true
+
+#   tasks:
+#     - name: Create MMS directories
+#       ansible.builtin.file:
+#         path: "{{ item }}"
+#         state: directory
+#         owner: mongodb-mms
+#         group: mongodb-mms
+#         mode: "0770"
+#       loop:
+#         - /opt/mongodb
+#         - /opt/mongodb/pki
+
+#     - name: get CA certificate
+#       ansible.builtin.copy:
+#         src: files/ca.pem
+#         dest: "/opt/mongodb/pki/ca.pem"
+#         owner: mongod
+#         group: mongod
+#         mode: "0644"
+
+#     - name: get CA key
+#       ansible.builtin.copy:
+#         src: files/ca.key
+#       register: ca_key
+
+#     - name: generate OpenSSL key
+#       community.crypto.openssl_privatekey:
+#         path: /opt/mongodb/pki/server.key
+#         type: "RSA"
+#         size: 4096
+#         state: present
+#         owner: mongod
+#         group: mongod
+#       register: key_result
+
+#     - name: generate OpenSSL CSR
+#       community.crypto.openssl_csr:
+#         privatekey_path: /opt/mongodb/pki/server.key
+#         common_name: "{{ internal_dns }}"
+#         country_name: US
+#         state_or_province_name: NY
+#         locality_name: NY
+#         organization_name: MongoDB Inc.
+#         organizational_unit_name: Professional Services
+#         email_address: ps-sde@mongodb.com
+#         subject_alt_name: "DNS:{{ internal_dns }}"
+#       register: csr_result
+
+#     - name: sign certificate
+#       community.crypto.x509_certificate:
+#         path: /opt/mongodb/pki/server.pem
+#         csr_content: csr_result
+#         provider: ownca
+#         ownca_path: /opt/mongodb/pki/ca.pem
+#         ownca_privatekey_content: ca_key
+#         owner: mongod
+#         group: mongod
+#         mode: 0644
+
+#     - name: install mms
+#       ansible.builtin.yum:
+#         name: https://downloads.mongodb.com/on-prem-mms/rpm/mongodb-mms-6.0.10.100.20230228T0344Z.x86_64.rpm
+#         state: present
+
+#     - name: mms config file
+#       vars:
+#         connection_string: "mongodb://{{ groups.app_db_servers[0].internal_dns }}:27017,{{ groups.app_db_servers[1].internal_dns }}:27017,{{ groups.app_db_servers[2].internal_dns }}:27017"
+#       ansible.builtin.template:
+#         src: files/mms.conf.j2
+#         dest: /opt/mongodb/mms/conf/conf-mms.properties
+#         mode: 0600
+#         owner: mongodb-mms
+#         group: mongodb-mms
