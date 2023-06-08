@@ -90,12 +90,12 @@
   become: yes
   
   tasks:
-    - name: Ensure group mongod exists
+    - name: Ensure group mongodb exists
       ansible.builtin.group:
         name: mongodb
         state: present
 
-    - name: Ensure user mongod exists
+    - name: Ensure user mongodb exists
       ansible.builtin.user:
         name: mongodb
         group: mongodb
@@ -120,8 +120,8 @@
       
     # - name: Import MongoDB public GPG key
     #   apt_key:
-    #     url: https://pgp.mongodb.com/server-5.0.asc #https://pgp.mongodb.com/server-6.0.asc
-    #     keyring: /usr/share/keyrings/mongodb-server-5.0.gpg  #/usr/share/keyrings/mongodb-server-6.0.gpg 
+    #     url: https://pgp.mongodb.com/server-6.0.asc
+    #     keyring: /usr/share/keyrings/mongodb-server-6.0.gpg 
     #     state: present
 
     - name: Add MongoDB list file
@@ -164,6 +164,46 @@
         state: started
         enabled: yes
 
+- name: "Play 3 || - Initialize AppDB Replica set"
+  hosts: om0 
+  become: yes
+  tasks:
+    - name: Install python3-pip 
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Install pymongo
+      ansible.builtin.pip:
+        name: pymongo
+
+    - name: Ensure replicaset rs0 exists
+      mongodb_replicaset:
+        login_host: localhost
+        login_user: mongoadmin
+        login_password: passwordone
+        login_database: admin
+        replica_set: appdbRS
+        members:
+        - "{{appdb_rs_primary}}:27017"
+        - "{{appdb_rs_secondary1}}:27017"
+        - appdb_rs_secondary2:27017
+
+    - name: Add a member to the replicaset
+      community.mongodb.mongodb_replicaset:
+        replica_set: appdbRS
+        login_host: localhost
+        login_user: mongoadmin
+        login_password: passwordone
+        login_database: admin
+        reconfigure: yes
+        members:
+           - host: "{{appdb_rs_primary}}:27017"
+             votes: 1
+           - host: "{{appdb_rs_secondary1}}:27017"
+             votes: 1
+           - host: "{{appdb_rs_secondary2}}:27017"
+             votes: 1
 
 
 # - name: "Play 3 || - Configure Ops Manager servers"

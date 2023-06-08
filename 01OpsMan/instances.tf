@@ -26,8 +26,6 @@ resource "aws_instance" "om-node" {
   vpc_security_group_ids      = [aws_security_group.om-sec-grp.id]
   subnet_id                   = each.value.id
 
-
-
   ebs_block_device {
     device_name           = "/dev/xvdb"
     volume_type           = "io2"
@@ -60,20 +58,6 @@ resource "aws_instance" "om-node" {
     expire-on = "2023-12-31"
   }
 
-  # provisioner "remote-exec" {
-  #   inline = ["echo 'wait until ssh is ready'"]
-
-  #   connection {
-  #     type = "ssh"
-  #     user = "ubuntu"
-  #     private_key = file(var.private-key-file)
-  #     host = self.public_ip
-  #   }
-  # }
-
-  # provisioner "local-exec" {
-  #   command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ubuntu -i '${self.public_ip},' --private-key ${var.private-key-file} ./ansible_templates/installPackage.yml"
-  # } 
 }
 
 
