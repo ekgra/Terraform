@@ -1,4 +1,6 @@
-ami-id                = "ami-0310483fb2b488153"
+ami-id = "ami-0d02292614a3b0df1"
+# ami-id                = "ami-0310483fb2b488153" # ubuntu 22
+# amazon2= "ami-0a38ff16b1a996d39"
 om-instance-type      = "r5.large"
 ansible-instance-type = "t3.medium"
 key-pair              = "sydneyKeyPair"

@@ -1,8 +1,6 @@
 - name: "Play 1 || - Initialize the servers and run prod notes"
   hosts: all
   become: yes
-  remote_user: ubuntu
-  become_method: sudo
 
   tasks:
     - name: Wait for SSH access
@@ -62,7 +60,7 @@
 
     - name: Set correct ulimits
       community.general.pam_limits:
-        domain: "mongod"
+        domain: "mongodb"
         limit_type: "{{ item.type }}"
         limit_item: "{{ item.parameter }}"
         value: "{{ item.value }}"
@@ -94,37 +92,51 @@
   tasks:
     - name: Ensure group mongod exists
       ansible.builtin.group:
-        name: mongod
+        name: mongodb
         state: present
 
     - name: Ensure user mongod exists
       ansible.builtin.user:
-        name: mongod
-        group: mongod
+        name: mongodb
+        group: mongodb
 
     - name: "Set owner of dbpath: /data/appdb, logpath: /data/logs and pidFilePath: /data/run/mongodb"
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
-        owner: mongod
-        group: mongod
+        owner: mongodb
+        group: mongodb
       with_items:
         - "/data/appdb"
         - "/data/logs"
+
         - "/data/run/mongodb"
     
-    - name: Import MongoDB public GPG key
+    - name: Import MongoDB public GPG key 5.0
       apt_key:
-        url: https://pgp.mongodb.com/server-6.0.asc
-        keyring: /usr/share/keyrings/mongodb-server-6.0.gpg 
+        url: https://pgp.mongodb.com/server-5.0.asc 
+        keyring: /usr/share/keyrings/mongodb-server-5.0.gpg  
         state: present
+      
+    # - name: Import MongoDB public GPG key
+    #   apt_key:
+    #     url: https://pgp.mongodb.com/server-5.0.asc #https://pgp.mongodb.com/server-6.0.asc
+    #     keyring: /usr/share/keyrings/mongodb-server-5.0.gpg  #/usr/share/keyrings/mongodb-server-6.0.gpg 
+    #     state: present
 
     - name: Add MongoDB list file
       apt_repository:
-        repo: "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.com/apt/ubuntu jammy/mongodb-enterprise/6.0 multiverse" 
+        repo: "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-5.0.gpg ] https://repo.mongodb.com/apt/ubuntu focal/mongodb-enterprise/5.0 multiverse" 
         state: present
-        filename: /etc/apt/sources.list.d/mongodb-enterprise-6.0.list
+        filename: /etc/apt/sources.list.d/mongodb-enterprise-5.0.list
         update_cache: yes
+
+    # - name: Add MongoDB list file
+    #   apt_repository:
+    #     repo: "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.com/apt/ubuntu jammy/mongodb-enterprise/6.0 multiverse" 
+    #     state: present
+    #     filename: /etc/apt/sources.list.d/mongodb-enterprise-6.0.list
+    #     update_cache: yes
 
     - name: Install MongoDB Enterprise
       apt:
@@ -143,8 +155,8 @@
         src: mongodb.key 
         dest: /etc/mongodb.key
         mode: '0400'
-        owner: mongod
-        group: mongod
+        owner: mongodb
+        group: mongodb
 
     - name: "Start mongod service"
       ansible.builtin.service: 

@@ -36,7 +36,7 @@ resource "null_resource" "execute-ansible-playbook" {
 
   provisioner "local-exec" {
     command = "ansible-playbook -i ./ansible/ansible_inventory ./ansible/configure_om_playbook.yml"
-  } 
+  }
 
   depends_on = [local_file.ansible-inventory]
 }
