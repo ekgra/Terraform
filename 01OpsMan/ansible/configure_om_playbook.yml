@@ -14,10 +14,10 @@
         ansible_connection: local
       become: no
     
-    # - name: "update apt-get"
-    #   apt:
-    #     upgrade: yes
-    #     update_cache: yes
+    - name: "update apt-get"
+      apt:
+        upgrade: yes
+        update_cache: yes
     
     - name: Set the hostname
       ansible.builtin.hostname:
@@ -80,17 +80,16 @@
         - { type: 'hard', parameter: 'nproc', value: '64000' }
         - { type: 'soft', parameter: 'nproc', value: '64000' }
     
-    # - name: "run script to disable hugepages"
-    #   script:
-    #     cmd: disable_hugepage.sh
+    - name: "run script to disable hugepages"
+      script:
+        cmd: disable_hugepage.sh
         
-    # - name: reboot the machines
-    #   ansible.builtin.reboot:
+    - name: reboot the machines
+      ansible.builtin.reboot:
 
 - name: "Play 2 || - Install mongodb and start servers"
   hosts: om_servers
-  become: true
-  become_method: sudo
+  become: yes
   
   tasks:
     - name: Ensure group mongod exists
@@ -103,7 +102,7 @@
         name: mongod
         group: mongod
 
-    - name: Set owner of dbpath - /data/appdb and logpath /data/logs
+    - name: "Set owner of dbpath: /data/appdb, logpath: /data/logs and pidFilePath: /data/run/mongodb"
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
@@ -112,6 +111,7 @@
       with_items:
         - "/data/appdb"
         - "/data/logs"
+        - "/data/run/mongodb"
     
     - name: Import MongoDB public GPG key
       apt_key:
@@ -131,16 +131,26 @@
         name: mongodb-enterprise
         state: present
         update_cache: yes
-    
-    - name: "start mongod service"
-      service: 
+
+    - name: "Copy mongod.conf file"
+      copy: 
+        src: mongod.conf 
+        dest: /etc/mongod.conf
+        mode: '0644'
+
+    - name: "Copy mongodb.key file"
+      copy: 
+        src: mongodb.key 
+        dest: /etc/mongodb.key
+        mode: '0400'
+        owner: mongod
+        group: mongod
+
+    - name: "Start mongod service"
+      ansible.builtin.service: 
         name: mongod
         state: started
         enabled: yes
-
-
-
-
 
 
 
