@@ -1,3 +1,4 @@
+# =================================================================================================
 - name: "Play 1 || - Initialize the servers and run prod notes"
   hosts: all
   become: yes
@@ -82,9 +83,10 @@
       script:
         cmd: disable_hugepage.sh
         
-    - name: reboot the machines
-      ansible.builtin.reboot:
+    # - name: reboot the machines
+    #   ansible.builtin.reboot:
 
+# =================================================================================================
 - name: "Play 2 || - Install mongodb and start servers"
   hosts: om_servers
   become: yes
@@ -164,6 +166,7 @@
         state: started
         enabled: yes
 
+# =================================================================================================
 - name: "Play 3 || - Initialize AppDB Replica set"
   hosts: om0 
   become: yes
@@ -177,60 +180,65 @@
       ansible.builtin.pip:
         name: pymongo
 
-    - name: Ensure replicaset rs0 exists
-      mongodb_replicaset:
-        login_host: localhost
-        login_user: mongoadmin
-        login_password: passwordone
-        login_database: admin
-        replica_set: appdbRS
-        members:
-        - "{{appdb_rs_primary}}:27017"
-        - "{{appdb_rs_secondary1}}:27017"
-        - appdb_rs_secondary2:27017
-
-    - name: Add a member to the replicaset
+    - name: Ensure replicaset appdbRS exists 
       community.mongodb.mongodb_replicaset:
         replica_set: appdbRS
-        login_host: localhost
-        login_user: mongoadmin
-        login_password: passwordone
-        login_database: admin
-        reconfigure: yes
+        debug: true
         members:
-           - host: "{{appdb_rs_primary}}:27017"
-             votes: 1
-           - host: "{{appdb_rs_secondary1}}:27017"
-             votes: 1
-           - host: "{{appdb_rs_secondary2}}:27017"
-             votes: 1
+          - "{{appdb_rs_primary}}:27017"
+          - "{{appdb_rs_secondary1}}:27017"
+          - "{{appdb_rs_secondary2}}:27017"
 
+    - name: Wait for the replicaset appdbRS to converge, check 2 times, 5 second interval between checks
+      community.mongodb.mongodb_status:
+        replica_set: appdbRS
+        poll: 2
+        interval: 5
+  
+    - name: Add initial admin user
+      community.mongodb.mongodb_user:
+        name: mongoadmin
+        password: passwordone
+        roles: 
+          - { role: "root", db: "admin" }
+        database: admin
+        state: present
+        create_for_localhost_exception: /data/createdUserAlready
 
-# - name: "Play 3 || - Configure Ops Manager servers"
-#   hosts: om_servers
-#   become: true
-#   become_method: sudo
-#   gather_facts: true
+# =================================================================================================
+- name: "Play 4 || - Configure Ops Manager servers"
+  hosts: om_servers
+  become: yes
 
-#   tasks:
-#     - name: Create MMS directories
-#       ansible.builtin.file:
-#         path: "{{ item }}"
-#         state: directory
-#         owner: mongodb-mms
-#         group: mongodb-mms
-#         mode: "0770"
-#       loop:
-#         - /opt/mongodb
-#         - /opt/mongodb/pki
+  tasks:
+    - name: Ensure group mongodb-mms exists
+      ansible.builtin.group:
+        name: mongodb-mms
+        state: present
 
-#     - name: get CA certificate
-#       ansible.builtin.copy:
-#         src: files/ca.pem
-#         dest: "/opt/mongodb/pki/ca.pem"
-#         owner: mongod
-#         group: mongod
-#         mode: "0644"
+    - name: Ensure user mongodb-mms exists
+      ansible.builtin.user:
+        name: mongodb-mms
+        group: mongodb-mms
+
+    - name: Create MMS directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: mongodb-mms
+        group: mongodb-mms
+        mode: "0770"
+      loop:
+        - /opt/mongodb
+        - /opt/mongodb/pki
+
+    - name: get CA certificate
+      ansible.builtin.copy:
+        src: files/ca.pem
+        dest: "/opt/mongodb/pki/ca.pem"
+        owner: mongod
+        group: mongod
+        mode: "0644"
 
 #     - name: get CA key
 #       ansible.builtin.copy:
@@ -250,14 +258,14 @@
 #     - name: generate OpenSSL CSR
 #       community.crypto.openssl_csr:
 #         privatekey_path: /opt/mongodb/pki/server.key
-#         common_name: "{{ internal_dns }}"
+#         common_name: "{{ hostname }}"
 #         country_name: US
 #         state_or_province_name: NY
 #         locality_name: NY
 #         organization_name: MongoDB Inc.
 #         organizational_unit_name: Professional Services
 #         email_address: ps-sde@mongodb.com
-#         subject_alt_name: "DNS:{{ internal_dns }}"
+#         subject_alt_name: "DNS:{{ hostname }}"
 #       register: csr_result
 
 #     - name: sign certificate
