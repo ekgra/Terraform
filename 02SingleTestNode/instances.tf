@@ -40,7 +40,7 @@ resource "aws_instance" "k-test-node" {
     volume_size = 10
   }
 
-  count = 3
+  count = var.count-nodes
 
   tags = {
     Name      = "k-test-node-${count.index}"

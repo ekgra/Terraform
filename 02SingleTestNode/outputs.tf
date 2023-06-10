@@ -16,20 +16,10 @@ output "vpc-azs" {
 #   value =  aws_instance.k-test-node.private_ip
 # }
 
-output "public_ip" {
-  description = "The public IP address assigned to the instance, if applicable. NOTE: If you are using an aws_eip with your instance, you should refer to the EIP's address directly and not use `public_ip` as this field will change after the EIP is attached"
-  value = [
-    aws_instance.k-test-node[0].public_ip,
-    aws_instance.k-test-node[1].public_ip,
-    aws_instance.k-test-node[2].public_ip
-  ]
-}
-
-output "private_ip" {
+output "node_ips" {
   description = "The private IP address assigned to the instance"
   value = [
-    aws_instance.k-test-node[0].private_ip,
-    aws_instance.k-test-node[1].private_ip,
-    aws_instance.k-test-node[2].private_ip
+    { "public" : [for instance in aws_instance.k-test-node : instance.private_ip] },
+    { "private" : [for instance in aws_instance.k-test-node : instance.public_ip] }
   ]
 }

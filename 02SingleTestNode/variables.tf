@@ -1,14 +1,15 @@
 variable "region" {
-  type    = string
-  default = "ap-southeast-2"
+  type = string
 }
 
 variable "vpc-name" {
-  type    = string
-  default = "k-vpc"
+  type = string
 }
 
 variable "instance-type" {
-  type    = string
-  default = "t3.micro"
+  type = string
+}
+
+variable "count-nodes" {
+  type = number
 }
