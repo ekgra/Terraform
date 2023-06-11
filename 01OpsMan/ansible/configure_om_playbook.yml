@@ -189,11 +189,9 @@
           - "{{appdb_rs_secondary1}}:27017"
           - "{{appdb_rs_secondary2}}:27017"
 
-    - name: Wait for the replicaset appdbRS to converge, check 2 times, 5 second interval between checks
-      community.mongodb.mongodb_status:
-        replica_set: appdbRS
-        poll: 2
-        interval: 5
+    # - name: "Pause for 20 seconds to allow for the replicaset appdbRS to converge"
+    #   ansible.builtin.pause:
+    #     seconds: 20
   
     - name: Add initial admin user
       community.mongodb.mongodb_user:
@@ -232,13 +230,39 @@
         - /opt/mongodb
         - /opt/mongodb/pki
 
-    - name: get CA certificate
-      ansible.builtin.copy:
-        src: files/ca.pem
-        dest: "/opt/mongodb/pki/ca.pem"
-        owner: mongod
-        group: mongod
-        mode: "0644"
+# =================================================================================================
+- name: "Play 5 || - Install Ops Manager rpm"
+  hosts: om0, om1
+  become: yes
+
+  tasks:
+    - name: "download  and install the Ops Manager rpm"
+      ansible.builtin.apt:
+        deb: "{{ opsman_deb }}"
+    
+    - name: mms config file
+      vars:
+        connection_string: 'mongodb://mongoadmin:passwordone@{{ appdb_rs_primary }}:27017,{{ appdb_rs_secondary1 }}:27017,{{ appdb_rs_secondary2 }}:27017'
+      ansible.builtin.template:
+        src: files/conf-mms.properties.j2
+        dest: /opt/mongodb/mms/conf/conf-mms.properties
+        mode: 0600
+        owner: mongodb-mms
+        group: mongodb-mms
+
+    - name: "Start mongodb-mms service"
+      ansible.builtin.service: 
+        name: mongodb-mms
+        state: started
+        enabled: yes
+
+    # - name: get CA certificate
+    #   ansible.builtin.copy:
+    #     src: files/ca.pem
+    #     dest: "/opt/mongodb/pki/ca.pem"
+    #     owner: mongod
+    #     group: mongod
+    #     mode: "0644"
 
 #     - name: get CA key
 #       ansible.builtin.copy:
@@ -278,18 +302,3 @@
 #         owner: mongod
 #         group: mongod
 #         mode: 0644
-
-#     - name: install mms
-#       ansible.builtin.yum:
-#         name: https://downloads.mongodb.com/on-prem-mms/rpm/mongodb-mms-6.0.10.100.20230228T0344Z.x86_64.rpm
-#         state: present
-
-#     - name: mms config file
-#       vars:
-#         connection_string: "mongodb://{{ groups.app_db_servers[0].internal_dns }}:27017,{{ groups.app_db_servers[1].internal_dns }}:27017,{{ groups.app_db_servers[2].internal_dns }}:27017"
-#       ansible.builtin.template:
-#         src: files/mms.conf.j2
-#         dest: /opt/mongodb/mms/conf/conf-mms.properties
-#         mode: 0600
-#         owner: mongodb-mms
-#         group: mongodb-mms

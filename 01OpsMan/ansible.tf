@@ -28,6 +28,7 @@ om${index}
 %{for index, fqdn in local.enum-om-node-fqdn-pri~}
 ${index == "0" ? join("", ["appdb_rs_primary", "=", fqdn]) : join("", ["appdb_rs_secondary", index, "=", fqdn])} 
 %{endfor~}
+opsman_deb=${var.opsman-deb}
 
 DOC
 }

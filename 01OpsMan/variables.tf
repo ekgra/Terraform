@@ -37,3 +37,6 @@ variable "sg-ingress-ports" {
   type = list(any)
 }
 
+variable "opsman-deb" {
+  type = string
+}
