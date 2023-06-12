@@ -83,8 +83,8 @@
       script:
         cmd: disable_hugepage.sh
         
-    # - name: reboot the machines
-    #   ansible.builtin.reboot:
+    - name: reboot the machines
+      ansible.builtin.reboot:
 
 # =================================================================================================
 - name: "Play 2 || - Install mongodb and start servers"
@@ -189,9 +189,9 @@
           - "{{appdb_rs_secondary1}}:27017"
           - "{{appdb_rs_secondary2}}:27017"
 
-    # - name: "Pause for 20 seconds to allow for the replicaset appdbRS to converge"
-    #   ansible.builtin.pause:
-    #     seconds: 20
+    - name: "Pause for 20 seconds to allow for the replicaset appdbRS to converge"
+      ansible.builtin.pause:
+        seconds: 20
   
     - name: Add initial admin user
       community.mongodb.mongodb_user:

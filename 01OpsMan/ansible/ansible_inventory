@@ -11,6 +11,5 @@ om2
 appdb_rs_primary=tf-om-node-0.mdbrecruit.net 
 appdb_rs_secondary1=tf-om-node-1.mdbrecruit.net 
 appdb_rs_secondary2=tf-om-node-2.mdbrecruit.net 
-
 opsman_deb=https://downloads.mongodb.com/on-prem-mms/deb/mongodb-mms-6.0.14.100.20230530T1837Z.amd64.deb
 

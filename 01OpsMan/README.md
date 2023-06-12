@@ -18,11 +18,16 @@ Install
 3. Optionally, update the - `MAY CUSTOMIZE` - section
 
 ## Step 2 - Spin up the OM Infra
-The following creates the infra via Terraform and the runs an Ansible playbook to configure the OM setup
+The following creates the infra via Terraform and the runs an Ansible playbook to configure the OM setup.
 
     alias tf=terraform
     tf plan -out p0
     tf apply p0
+
+The Ops Manager is installed on 2 nodes and is available at either of the links -
+
+http://extf-om-node-0.mdbrecruit.net:8080
+http://extf-om-node-1.mdbrecruit.net:8080
 
 ## Step 3 (optional) - How to edit and re-run the Ansible playbook
 Once Infra is created by Terraform, the terraform resource that runs the ansible playbook can be marked as tainted, and on next apply it will recreate that resource. Since it is a null resource, it won't impact any Infra in cloud.

@@ -15,6 +15,13 @@ output "om-node-ips" {
   }
 }
 
+output "lb-node-ips" {
+  value = {
+    "public" : aws_instance.lb-node.public_ip,
+    "private" : aws_instance.lb-node.private_ip,
+    "fqdn" : aws_route53_record.lb-node-public-dns-record.fqdn
+  }
+}
 
 
 
