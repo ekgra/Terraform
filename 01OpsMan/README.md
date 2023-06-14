@@ -18,6 +18,12 @@ Install
 3. Optionally, update the - `MAY CUSTOMIZE` - section
 
 ## Step 2 - Spin up the OM Infra
+
+### 2.1 Login to get aws credentials
+
+    aws sso login
+
+### 2.2 Apply the terraform configuration 
 The following creates the infra via Terraform and the runs an Ansible playbook to configure the OM setup.
 
     alias tf=terraform

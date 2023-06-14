@@ -239,6 +239,13 @@
     - name: "download  and install the Ops Manager rpm"
       ansible.builtin.apt:
         deb: "{{ opsman_deb }}"
+
+    - name: Recursively change ownership of a directory
+      ansible.builtin.file:
+        path: /opt/mongodb
+        state: directory
+        recurse: yes
+        mode: a+rx
     
     - name: mms config file
       vars:
