@@ -18,6 +18,7 @@ resource "local_file" "ansible-inventory" {
 %{for index, fqdn in local.enum-om-node-fqdn-pub~}
 om${index} ansible_host=${fqdn} ansible_port=22 ansible_user=ubuntu ansible_connection=ssh hostname=${substr(fqdn, 2, length(fqdn))}
 %{endfor~}
+omlb ansible_host=${aws_route53_record.lb-node-public-dns-record.fqdn} ansible_port=22 ansible_user=ubuntu ansible_connection=ssh hostname=${aws_route53_record.lb-node-private-dns-record.fqdn}
 
 [om_servers]
 %{for index, fqdn in local.enum-om-node-fqdn-pub~}

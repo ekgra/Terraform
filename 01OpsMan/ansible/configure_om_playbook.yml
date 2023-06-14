@@ -1,6 +1,7 @@
 # =================================================================================================
 - name: "Play 1 || - Initialize the servers and run prod notes"
   hosts: all
+  any_errors_fatal: true
   become: yes
 
   tasks:
@@ -189,19 +190,25 @@
           - "{{appdb_rs_secondary1}}:27017"
           - "{{appdb_rs_secondary2}}:27017"
 
-    - name: "Pause for 20 seconds to allow for the replicaset appdbRS to converge"
-      ansible.builtin.pause:
-        seconds: 20
-  
+    # - name: "Pause for 20 seconds to allow for the replicaset appdbRS to converge"
+    #   ansible.builtin.pause:
+    #     seconds: 20
+    
     - name: Add initial admin user
-      community.mongodb.mongodb_user:
-        name: mongoadmin
-        password: passwordone
-        roles: 
-          - { role: "root", db: "admin" }
-        database: admin
-        state: present
-        create_for_localhost_exception: /data/createdUserAlready
+      block:
+      - name: create user
+        community.mongodb.mongodb_user:
+          name: mongoadmin
+          password: passwordone
+          roles: 
+            - { role: "root", db: "admin" }
+          database: admin
+          state: present
+          create_for_localhost_exception: /data/createdUserAlready
+        retries: 10
+        delay: 20
+        register: create_user
+        until: create_user is not failed
 
 # =================================================================================================
 - name: "Play 4 || - Configure Ops Manager servers"
@@ -240,7 +247,7 @@
       ansible.builtin.apt:
         deb: "{{ opsman_deb }}"
 
-    - name: Recursively change ownership of a directory
+    - name: Recursively change ownership of /opt/mongodb directory
       ansible.builtin.file:
         path: /opt/mongodb
         state: directory
@@ -257,11 +264,61 @@
         owner: mongodb-mms
         group: mongodb-mms
 
-    - name: "Start mongodb-mms service"
+    - name: "Start mongodb-mms service on first node"
       ansible.builtin.service: 
         name: mongodb-mms
         state: started
         enabled: yes
+      when: "{{ inventory_hostname == 'om0' }}"
+
+    - name: Wait until the mongodb-mms service has started completely before continuing
+      wait_for:
+        path: /var/log/syslog
+        search_regex: "mongodb-mms.*No services found$"
+      when: "{{ inventory_hostname == 'om0' }}"
+
+    - name: "Create /etc/mongodb-mms directory if it does not exist on second node"
+      ansible.builtin.file:
+        path: /etc/mongodb-mms
+        state: directory
+        mode: '0755'
+      when: "{{ inventory_hostname == 'om1' }}"
+
+    - name: Fetch the gen.key file from the first node to ansible master
+      run_once: yes
+      fetch: 
+        src: /etc/mongodb-mms/gen.key 
+        dest: ./files/ 
+        flat: yes
+      when: "{{ inventory_hostname == 'om0' }}"
+
+    - name: Copy the file from ansible master to second node
+      copy: 
+        src: ./files/gen.key 
+        dest: /etc/mongodb-mms/
+      when: "{{ inventory_hostname == 'om1' }}"
+
+    - name: set correct permissions for the gen.key file on second node
+      ansible.builtin.file:
+        path: /etc/mongodb-mms/gen.key
+        state: file
+        mode: '0500'
+        owner: mongodb-mms
+        group: mongodb-mms
+      when: "{{ inventory_hostname == 'om1' }}"
+
+    - name: "Start Ops Manager on Second node"
+      ansible.builtin.service: 
+        name: mongodb-mms
+        state: started
+        enabled: yes
+      when: "{{ inventory_hostname == 'om1' }}"
+    
+    - name: Wait until the mongodb-mms service has started completely before continuing
+      wait_for:
+        path: /var/log/syslog
+        search_regex: "mongodb-mms.*No services found$"
+      when: "{{ inventory_hostname == 'om1' }}"
 
     # - name: get CA certificate
     #   ansible.builtin.copy:
