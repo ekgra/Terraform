@@ -1,5 +1,5 @@
 # =================================================================================================
-- name: "Play 1 || - Initialize the servers and run prod notes"
+- name: "Play 1 || - Initialize the servers"
   hosts: all
   any_errors_fatal: true
   become: yes
@@ -22,13 +22,21 @@
     - name: Set the hostname
       ansible.builtin.hostname:
         name: "{{ hostname }}"
-    
+      when: "inventory_hostname != 'omlb'"
+  
+# =================================================================================================
+- name: "Play 3 || - Run prod notes on Ops Man Servers"
+  hosts: om_servers
+  any_errors_fatal: true
+  become: yes
+
+  tasks:
     - name: Create xfs filesystem on /dev/nvme1n1
       community.general.filesystem:
         fstype: xfs
         state: present
         dev: /dev/nvme1n1
-    
+      
     - name: Create xfs filesystem on /dev/nvme2n1
       community.general.filesystem:
         fstype: xfs
@@ -83,12 +91,28 @@
     - name: "run script to disable hugepages"
       script:
         cmd: disable_hugepage.sh
-        
+    
+    - name: Check if reboot_required
+      shell:
+        cmd: "grep 'mongodb-mms.*No services found$' /var/log/syslog"
+      changed_when: false
+      failed_when: reboot_required.rc != 0 and reboot_required.rc != 1
+      check_mode: false
+      register: reboot_required
+    
+    # - name: Report reboot_required
+    #   debug:
+    #     msg: "{{ reboot_required }}"
+    #   changed_when: reboot_required.rc == 1
+    #   check_mode: false
+
     - name: reboot the machines
       ansible.builtin.reboot:
+      changed_when: reboot_required.rc == 1
+      check_mode: false
 
 # =================================================================================================
-- name: "Play 2 || - Install mongodb and start servers"
+- name: "Play 3 || - Install mongodb and start servers on Ops Man Servers"
   hosts: om_servers
   become: yes
   
@@ -168,7 +192,7 @@
         enabled: yes
 
 # =================================================================================================
-- name: "Play 3 || - Initialize AppDB Replica set"
+- name: "Play 4 || - Initialize AppDB Replica set"
   hosts: om0 
   become: yes
   tasks:
@@ -238,7 +262,7 @@
         - /opt/mongodb/pki
 
 # =================================================================================================
-- name: "Play 5 || - Install Ops Manager rpm"
+- name: "Play 5 || - Install Ops Manager rpm on Ops Man App Servers"
   hosts: om0, om1
   become: yes
 
@@ -269,20 +293,20 @@
         name: mongodb-mms
         state: started
         enabled: yes
-      when: "{{ inventory_hostname == 'om0' }}"
+      when: "inventory_hostname == 'om0'"
 
     - name: Wait until the mongodb-mms service has started completely before continuing
       wait_for:
         path: /var/log/syslog
         search_regex: "mongodb-mms.*No services found$"
-      when: "{{ inventory_hostname == 'om0' }}"
+      when: "inventory_hostname == 'om0'"
 
     - name: "Create /etc/mongodb-mms directory if it does not exist on second node"
       ansible.builtin.file:
         path: /etc/mongodb-mms
         state: directory
         mode: '0755'
-      when: "{{ inventory_hostname == 'om1' }}"
+      when: "inventory_hostname == 'om1'"
 
     - name: Fetch the gen.key file from the first node to ansible master
       run_once: yes
@@ -290,13 +314,13 @@
         src: /etc/mongodb-mms/gen.key 
         dest: ./files/ 
         flat: yes
-      when: "{{ inventory_hostname == 'om0' }}"
+      when: "inventory_hostname == 'om0'"
 
     - name: Copy the file from ansible master to second node
       copy: 
         src: ./files/gen.key 
         dest: /etc/mongodb-mms/
-      when: "{{ inventory_hostname == 'om1' }}"
+      when: "inventory_hostname == 'om1'"
 
     - name: set correct permissions for the gen.key file on second node
       ansible.builtin.file:
@@ -305,64 +329,106 @@
         mode: '0500'
         owner: mongodb-mms
         group: mongodb-mms
-      when: "{{ inventory_hostname == 'om1' }}"
+      when: "inventory_hostname == 'om1'"
 
     - name: "Start Ops Manager on Second node"
       ansible.builtin.service: 
         name: mongodb-mms
         state: started
         enabled: yes
-      when: "{{ inventory_hostname == 'om1' }}"
+      when: "inventory_hostname == 'om1'"
     
     - name: Wait until the mongodb-mms service has started completely before continuing
       wait_for:
         path: /var/log/syslog
         search_regex: "mongodb-mms.*No services found$"
-      when: "{{ inventory_hostname == 'om1' }}"
+      when: "inventory_hostname == 'om1'"
 
-    # - name: get CA certificate
-    #   ansible.builtin.copy:
-    #     src: files/ca.pem
-    #     dest: "/opt/mongodb/pki/ca.pem"
-    #     owner: mongod
-    #     group: mongod
-    #     mode: "0644"
 
-#     - name: get CA key
-#       ansible.builtin.copy:
-#         src: files/ca.key
-#       register: ca_key
+# =================================================================================================
+- name: "Play 2 || - Configure the Load Balancer node"
+  hosts: om_lb_servers
+  any_errors_fatal: true
+  become: yes
 
-#     - name: generate OpenSSL key
-#       community.crypto.openssl_privatekey:
-#         path: /opt/mongodb/pki/server.key
-#         type: "RSA"
-#         size: 4096
-#         state: present
-#         owner: mongod
-#         group: mongod
-#       register: key_result
+  tasks:
+    - name: Install nginx on Load Balancer 
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - nginx
+        - libnginx-mod-stream
+    
+    - name: Set the hostname to public DNS name
+      ansible.builtin.hostname:
+        name: "{{ ansible_host }}"
 
-#     - name: generate OpenSSL CSR
-#       community.crypto.openssl_csr:
-#         privatekey_path: /opt/mongodb/pki/server.key
-#         common_name: "{{ hostname }}"
-#         country_name: US
-#         state_or_province_name: NY
-#         locality_name: NY
-#         organization_name: MongoDB Inc.
-#         organizational_unit_name: Professional Services
-#         email_address: ps-sde@mongodb.com
-#         subject_alt_name: "DNS:{{ hostname }}"
-#       register: csr_result
+    - name: update sysctl.conf with net.ipv4.ip_nonlocal_bind 
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+      with_items:
+        - { name: 'net.ipv4.ip_nonlocal_bind', value: '1' }
+    
+    - name: Copy the nginx config file (Layer 4 LB)
+      ansible.builtin.template:
+        src: files/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+        mode: 0644
+        backup: yes
+    
+    - name: Restart service nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
 
-#     - name: sign certificate
-#       community.crypto.x509_certificate:
-#         path: /opt/mongodb/pki/server.pem
-#         csr_content: csr_result
-#         provider: ownca
-#         ownca_path: /opt/mongodb/pki/ca.pem
-#         ownca_privatekey_content: ca_key
-#         owner: mongod
-#         group: mongod
-#         mode: 0644
+
+#     # - name: get CA certificate
+#     #   ansible.builtin.copy:
+#     #     src: files/ca.pem
+#     #     dest: "/opt/mongodb/pki/ca.pem"
+#     #     owner: mongod
+#     #     group: mongod
+#     #     mode: "0644"
+
+# #     - name: get CA key
+# #       ansible.builtin.copy:
+# #         src: files/ca.key
+# #       register: ca_key
+
+# #     - name: generate OpenSSL key
+# #       community.crypto.openssl_privatekey:
+# #         path: /opt/mongodb/pki/server.key
+# #         type: "RSA"
+# #         size: 4096
+# #         state: present
+# #         owner: mongod
+# #         group: mongod
+# #       register: key_result
+
+# #     - name: generate OpenSSL CSR
+# #       community.crypto.openssl_csr:
+# #         privatekey_path: /opt/mongodb/pki/server.key
+# #         common_name: "{{ hostname }}"
+# #         country_name: US
+# #         state_or_province_name: NY
+# #         locality_name: NY
+# #         organization_name: MongoDB Inc.
+# #         organizational_unit_name: Professional Services
+# #         email_address: ps-sde@mongodb.com
+# #         subject_alt_name: "DNS:{{ hostname }}"
+# #       register: csr_result
+
+# #     - name: sign certificate
+# #       community.crypto.x509_certificate:
+# #         path: /opt/mongodb/pki/server.pem
+# #         csr_content: csr_result
+# #         provider: ownca
+# #         ownca_path: /opt/mongodb/pki/ca.pem
+# #         ownca_privatekey_content: ca_key
+# #         owner: mongod
+# #         group: mongod
+# #         mode: 0644

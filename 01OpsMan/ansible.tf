@@ -31,6 +31,16 @@ ${index == "0" ? join("", ["appdb_rs_primary", "=", fqdn]) : join("", ["appdb_rs
 %{endfor~}
 opsman_deb=${var.opsman-deb}
 
+[om_lb_servers]
+omlb
+
+[om_lb_servers:vars]
+%{for index, fqdn in local.enum-om-node-fqdn-pub~}
+${index == "0" ? join("", ["om_app_server_1", "=", fqdn]) : ""}
+${index == "1" ? join("", ["om_app_server_2", "=", fqdn]) : ""} 
+%{endfor~}
+
+
 DOC
 }
 

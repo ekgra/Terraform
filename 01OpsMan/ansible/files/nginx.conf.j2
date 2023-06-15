@@ -1,0 +1,27 @@
+user ubuntu;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+load_module /usr/lib/nginx/modules/ngx_stream_module.so;
+
+events {
+    worker_connections 1024;
+}
+
+stream {
+
+upstream {{ ansible_host }} {
+  server {{ om_app_server_1 }}:8080 weight=5;
+  server {{ om_app_server_2 }}:8080 weight=3;
+}
+
+server { 
+  listen 80;
+  proxy_pass {{ ansible_host }};
+} 
+
+include /etc/nginx/conf.d/*.conf;
+}
