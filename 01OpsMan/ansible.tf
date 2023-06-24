@@ -35,7 +35,7 @@ opsman_deb=${var.opsman-deb}
 omlb
 
 [om_lb_servers:vars]
-%{for index, fqdn in local.enum-om-node-fqdn-pub~}
+%{for index, fqdn in local.enum-om-node-fqdn-pri~}
 ${index == "0" ? join("", ["om_app_server_1", "=", fqdn]) : ""}
 ${index == "1" ? join("", ["om_app_server_2", "=", fqdn]) : ""} 
 %{endfor~}
