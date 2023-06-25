@@ -46,3 +46,19 @@
 
 # ----------------------------------------------------------------
 # openssl version -a | grep OPENSSLDIR
+
+# ----------------------------------------------------------------
+
+    # - name: "Copy mongod.conf file"
+    #   copy: 
+    #     src: appDB/mongod.conf 
+    #     dest: /etc/mongod.conf
+    #     mode: '0644'
+
+    # - name: "Copy mongodb.key file"
+    #   copy: 
+    #     src: appDB/mongodb.key 
+    #     dest: /etc/mongodb.key
+    #     mode: '0400'
+    #     owner: mongodb
+    #     group: mongodb
