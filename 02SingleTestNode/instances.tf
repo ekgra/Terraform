@@ -7,7 +7,7 @@ data "aws_ami" "ubuntu-ami" {
   provider = aws.provider
   filter {
     name   = "image-id"
-    values = ["ami-0d02292614a3b0df1"]
+    values = [var.ami-id]
   }
 }
 

@@ -3,6 +3,7 @@ Spins up a 3 node OM deployment
 
 ## Pre-requisites
 Install 
+
     - terraform
     - ansible
  

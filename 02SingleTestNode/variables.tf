@@ -10,6 +10,10 @@ variable "instance-type" {
   type = string
 }
 
+variable "ami-id" {
+  type = string
+}
+
 variable "count-nodes" {
   type = number
 }
