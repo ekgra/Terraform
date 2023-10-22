@@ -17,7 +17,7 @@ output "vpc-azs" {
 # }
 
 output "node_ips" {
-  description = "The private IP address assigned to the instance"
+  description = "The IP address assigned to the instance"
   value = [
     { "private" : [for instance in aws_instance.k-test-node : instance.private_ip] },
     { "public" : [for instance in aws_instance.k-test-node : instance.public_ip] }

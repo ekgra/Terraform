@@ -17,3 +17,11 @@ variable "ami-id" {
 variable "count-nodes" {
   type = number
 }
+
+variable "sg-ingress-ports" {
+  type = list(any)
+}
+
+variable "subnet-cidrs" {
+  type = list(string)
+}

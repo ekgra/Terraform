@@ -5,7 +5,7 @@ private-key-file = "/Users/outlander/.ssh/sydneyKeyPair.pem"
 # RECOMMENDED TO CUSTOMIZE
 region     = "ap-southeast-2"
 opsman-deb = "https://downloads.mongodb.com/on-prem-mms/deb/mongodb-mms-6.0.14.100.20230530T1837Z.amd64.deb"
-naming-prefix = "kuber-tf-om"
+# naming-prefix = "kuber-tf-om"
 
 # MAY CUSTOMIZE
 sg-ingress-ports = [

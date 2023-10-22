@@ -1,6 +1,6 @@
-count-nodes   = 3
+count-nodes = 1
 
-instance-type = "t3.small"
+instance-type = "t3.micro"
 vpc-name      = "k-vpc"
 region        = "ap-southeast-2"
 
@@ -11,4 +11,11 @@ region        = "ap-southeast-2"
 # ami-id              = "ami-0310483fb2b488153" 
 
 # amzn2 
-ami-id= "ami-0a38ff16b1a996d39"
+ami-id = "ami-0a38ff16b1a996d39"
+
+sg-ingress-ports = [
+  [22, 22, "tcp", ["0.0.0.0/0"]], [80, 80, "tcp", ["0.0.0.0/0"]],
+  [8443, 8443, "tcp", ["0.0.0.0/0"]],
+  [8080, 8080, "tcp", ["0.0.0.0/0"]], [27017, 27017, "tcp", ["0.0.0.0/0"]]
+]
+subnet-cidrs = ["192.168.0.0/28"]
