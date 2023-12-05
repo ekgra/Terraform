@@ -1,29 +1,39 @@
 variable "region" {
-  type    = string
-  default = "ap-southeast-2"
+  type = string
 }
 
 variable "vpc-name" {
-  type    = string
-  default = "k8s-vpc"
+  type = string
+}
+
+variable "vpc-cidr" {
+  type = string
+}
+
+variable "subnet-cidr" {
+  type = string
+}
+
+variable "sg-ingress-ports" {
+  type = list(any)
 }
 
 variable "instance-type" {
-  type    = string
-  default = "t3.medium"
+  type = string
 }
 
-# variable "k8s-master-hostname" {
-#   type    = string
-#   default = "k8s-master.mdbrecruit.net"
-# }
+variable "key-pair" {
+  type = string
+}
 
-# variable "k8s-worker-1-hostname" {
-#   type    = string
-#   default = "k8s-worker-1.mdbrecruit.net"
-# }
+variable "ami-id" {
+  type = string
+}
 
-# variable "k8s-worker-2-hostname" {
-#   type    = string
-#   default = "k8s-worker-2.mdbrecruit.net"
-# }
+variable "k8s-node-hostnames" {
+  type = list(string)
+}
+
+variable "dns-domain" {
+  type = string
+}

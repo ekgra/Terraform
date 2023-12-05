@@ -1,6 +1,6 @@
 resource "aws_vpc" "k8s-vpc" {
   provider             = aws.provider
-  cidr_block           = "192.168.0.0/20"
+  cidr_block           = var.vpc-cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
@@ -22,7 +22,7 @@ resource "aws_subnet" "k8s-subnet" {
   provider          = aws.provider
   availability_zone = element(data.aws_availability_zones.k8s-vpc-azs.names, 0)
   vpc_id            = aws_vpc.k8s-vpc.id
-  cidr_block        = "192.168.0.0/28"
+  cidr_block        = var.subnet-cidr
 }
 
 

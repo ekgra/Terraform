@@ -6,15 +6,12 @@ resource "aws_security_group" "k8s-sec-grp" {
 
 
   dynamic "ingress" {
-    for_each = [ [22,22,"tcp",["0.0.0.0/0"]], [80,80,"tcp",["0.0.0.0/0"]], [443,443,"tcp",["0.0.0.0/0"]], 
-                 [6443,6443,"tcp",["0.0.0.0/0"]], [2379,2380,"tcp",["0.0.0.0/0"]], 
-                 [6783,6783,"tcp",["0.0.0.0/0"]], [6783,6783,"udp",["0.0.0.0/0"]], 
-                 [10248,10260,"tcp",["0.0.0.0/0"]], [30000,32767,"tcp",["0.0.0.0/0"]]]
+    for_each = var.sg-ingress-ports
     iterator = port
     content {
-      from_port = port.value[0]
-      to_port = port.value[1]
-      protocol = port.value[2]
+      from_port   = port.value[0]
+      to_port     = port.value[1]
+      protocol    = port.value[2]
       cidr_blocks = port.value[3]
     }
   }
@@ -25,66 +22,6 @@ resource "aws_security_group" "k8s-sec-grp" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-  # ingress {
-  #   from_port   = 22
-  #   to_port     = 22
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-  # ingress {
-  #   from_port   = 80
-  #   to_port     = 80
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-  # ingress {
-  #   from_port   = 443
-  #   to_port     = 443
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-  # ingress {
-  #   from_port   = 6443
-  #   to_port     = 6443
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-  # ingress {
-  #   from_port   = 2379
-  #   to_port     = 2380
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-  # ingress {
-  #   from_port   = 6783
-  #   to_port     = 6783
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-  # ingress {
-  #   from_port   = 6784
-  #   to_port     = 6784
-  #   protocol    = "udp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-  # ingress {
-  #   from_port   = 10248
-  #   to_port     = 10260
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-  # ingress {
-  #   from_port   = 30000
-  #   to_port     = 32767
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-  # egress {
-  #   from_port   = 0
-  #   to_port     = 0
-  #   protocol    = "-1"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
 
 
 # plan to have separate security groups for Control plane and worker nodes later.

@@ -7,41 +7,40 @@ data "aws_ami" "ubuntu-ami" {
   provider = aws.provider
   filter {
     name   = "image-id"
-    values = ["ami-0d02292614a3b0df1"]
+    values = [var.ami-id]
   }
 }
 
-data "aws_key_pair" "sydneyKeyPair" {
+data "aws_key_pair" "keyPair" {
   provider           = aws.provider
-  key_name           = "sydneyKeyPair"
+  key_name           = var.key-pair
   include_public_key = true
 }
-
-
 
 
 resource "aws_instance" "k8s-node" {
   provider                    = aws.provider
   ami                         = data.aws_ami.ubuntu-ami.id
   instance_type               = var.instance-type
-  key_name                    = data.aws_key_pair.sydneyKeyPair.key_name
+  key_name                    = data.aws_key_pair.keyPair.key_name
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.k8s-sec-grp.id]
   subnet_id                   = aws_subnet.k8s-subnet.id
-  ebs_block_device {
-    device_name = "/dev/xvdba"
+  # ebs_block_device {
+  #   device_name = "/dev/xvdba"
+  #   volume_type = "gp3"
+  #   volume_size = 30
+  # }
+  root_block_device {
     volume_type = "gp3"
     volume_size = 30
   }
-  root_block_device {
-    volume_type = "gp3"
-    volume_size = 10
-  }
-  count = 3
 
-  user_data = file("installsw.sh")
+  count = length(var.k8s-node-hostnames)
+
+  # user_data = file("installsw.sh")
   tags = {
-    Name      = "k8s-node-${count.index}"
+    Name      = var.k8s-node-hostnames[count.index]
     expire-on = "2023-12-31"
   }
 

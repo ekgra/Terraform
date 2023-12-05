@@ -80,7 +80,16 @@ echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://a
 
 #   3.4 Update apt package index, install kubelet, kubeadm and kubectl, and pin their version
 sudo apt-get update
-sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-get install -y bash-completion kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
+sudo kubectl completion bash > /root/kubecom.sh
+sudo kubectl completion bash > /home/ubuntu/kubecom.sh
+sudo chown ubuntu:ubuntu /home/ubuntu/kubecom.sh
+sudo echo "source /home/ubuntu/kubecom.sh" >> /home/ubuntu/.bash_profile
+sudo echo "source /root/kubecom.sh" >> /root/.bash_profile
+
+# sudo bash -c 'cat <<EOF >> /etc/hosts
+# `hostname -i` master
+# EOF'
 
 touch /home/ubuntu/fini

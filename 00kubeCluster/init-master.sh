@@ -10,7 +10,7 @@ sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 #    https://github.com/containerd/containerd/blob/main/docs/getting-started.md
 #   1.1 install containerd
 wget https://github.com/containerd/containerd/releases/download/v1.7.1/containerd-1.7.1-linux-amd64.tar.gz
-sudo tar Cxzvf /usr/local containerd-1.7.1-linux-amd64.tar.gz
+sudo tar Cxzvf /usr/local/bin containerd-1.7.1-linux-amd64.tar.gz
 
 # get the continerd unit file
 wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
@@ -31,7 +31,7 @@ sudo tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.3.0.tgz
 
 #   1.4 install crictl 
 #       https://github.com/kubernetes-sigs/cri-tools/blob/master/docs/crictl.md
-VERSION="v1.27.0" # check latest version in /releases page
+VERSION="v1.28.0" # check latest version in /releases page
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz
 sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
 rm -f crictl-$VERSION-linux-amd64.tar.gz
